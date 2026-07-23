@@ -1,6 +1,15 @@
 # spec-probe
 
-Gut vLLM's rejection sampler. Render token-level `p_draft` / `p_target` — not the macro `/metrics` acceptance rate.
+[![GitHub](https://img.shields.io/badge/github-brian--mwirigi%2Fspec--probe-181717?logo=github)](https://github.com/brian-mwirigi/spec-probe)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/brian-mwirigi/spec-probe/blob/main/notebooks/SpecProbe_Live_Fire.ipynb)
+[![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](LICENSE)
+[![npm name](https://img.shields.io/badge/npm-spec--probe-CB3837?logo=npm)](https://www.npmjs.com/package/spec-probe)
+[![PyPI name](https://img.shields.io/badge/PyPI-spec--probe-3775A9?logo=pypi&logoColor=white)](https://pypi.org/project/spec-probe/)
+
+**Token-level diagnostics for vLLM speculative decoding.**
+
+vLLM's `/metrics` only gives you a macro `spec_decode_draft_acceptance_rate`.  
+**spec-probe** guts `RejectionSampler.forward`, dumps `p_draft` / `p_target`, and renders a verification lane so you can see *why* a draft token died — indent drift, domain boundaries, overconfidence — and compare EAGLE vs n-gram on the same prompt.
 
 ```text
 vllm/v1/sample/rejection_sampler.py
@@ -18,46 +27,60 @@ FastAPI :8787  (/events · /ws · /bundle)
 Vite verification lane + side-by-side strategy sweep
 ```
 
-## Colab (no local GPU required)
+## Why it exists
 
-Open [`notebooks/SpecProbe_Live_Fire.ipynb`](notebooks/SpecProbe_Live_Fire.ipynb) in Google Colab (GPU runtime).
+| Without spec-probe | With spec-probe |
+|--------------------|-----------------|
+| One acceptance % | Per-token `p` vs `q` |
+| Blind temperature / draft tuning | Structural failure tags (indent, syntax, boundary) |
+| Guess EAGLE vs n-gram | Side-by-side lanes on the same prompt |
+| Observer bias risk | Async extract — JSONL I/O off the CUDA hot path |
 
-The notebook:
+## Quick start
 
-1. Applies **`nest_asyncio`** so FastAPI/vLLM don't clash with Colab's existing event loop  
-2. Installs `spec-probe` + vLLM, patches `RejectionSampler.forward`  
-3. Runs a **greedy A/B losslessness check** (`with patch == without patch`)  
-4. Emits **`live.jsonl`** and **downloads it** (offline path — drop into local Vite)  
-5. Optionally starts the FastAPI bridge and exposes it with  
-   `google.colab.output.serve_kernel_port_as_window(8787)` (no ngrok required)  
-6. Optional n-gram vs EAGLE sweep → downloadable side-by-side JSONL  
-
-**Recommended path:** download `live.jsonl` → local `npm run dev` → drop the file in the UI.
-
-## UI (local)
+### Local UI (demo JSONL, no GPU)
 
 ```bash
+git clone https://github.com/brian-mwirigi/spec-probe.git
+cd spec-probe
 npm install
 npm run dev
 ```
 
-Load **indent drift · ngram vs eagle**, or drop a Colab-exported JSONL.
+Open the app → **indent drift · ngram vs eagle**.  
+Watch n-gram die at token `0` on whitespace while EAGLE clears the block.
 
-## Hook + bridge (local GPU)
+### Colab (live GPU, no local VRAM)
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/brian-mwirigi/spec-probe/blob/main/notebooks/SpecProbe_Live_Fire.ipynb)
+
+The notebook:
+
+1. Applies `nest_asyncio` (Colab event-loop safe)
+2. Patches `RejectionSampler.forward`
+3. **Greedy A/B losslessness check** (`with patch == without patch`)
+4. Emits `live.jsonl` and **downloads it** (best offline path)
+5. Optional bridge + `serve_kernel_port_as_window(8787)`
+
+Drop the downloaded JSONL into the local Vite UI.
+
+### Hook a local vLLM process
 
 ```bash
 cd python
-pip install -e ".[bridge,dev]"
+pip install -e ".[bridge,vllm]"
 
-SPECPROBE_JSONL=../public/traces/live.jsonl uvicorn specprobe_hook.bridge:app --port 8787
-# or: spec-probe-bridge
-```
-
-```bash
 export SPECPROBE_PATCH=1
 export SPECPROBE_JSONL=traces/live.jsonl
 export SPECPROBE_STRATEGY=eagle
 python -c "from specprobe_hook import install; assert install()"
+```
+
+Bridge:
+
+```bash
+SPECPROBE_JSONL=../public/traces/live.jsonl uvicorn specprobe_hook.bridge:app --port 8787
+# or: spec-probe-bridge
 ```
 
 ### Strategy sweep
@@ -74,13 +97,39 @@ python -m specprobe_hook.sweep \
   --eagle-model yuhuili/EAGLE-LLaMA3-Instruct-8B
 ```
 
+## What gets extracted
+
+| Field | Meaning |
+|-------|---------|
+| `draft_tokens` | Proposed token IDs |
+| `p_draft` / `p_target` | Mass on those tokens |
+| `acceptance_mask` | Leviathan–Matias accept/reject |
+| `accepted_tokens` | Passed the raw probability check |
+| `recovered_token` | Residual sample after reject |
+| `bonus_token` | Extra target sample on full accept |
+
+Schemas: [`schemas/speculative-trace-v1.json`](schemas/speculative-trace-v1.json), [`schemas/specprobe-event-v1.json`](schemas/specprobe-event-v1.json).
+
+## Repo layout
+
+```text
+spec-probe/
+├── src/                  # Vite + React verification lane
+├── python/specprobe_hook # vLLM patch, JSONL sink, FastAPI bridge, sweep CLI
+├── notebooks/            # Colab live-fire notebook
+├── schemas/              # trace + event JSON Schema
+├── public/traces/        # demo JSON / JSONL
+└── prompts/              # sweep prompts
+```
+
 ## Package names
 
-| Registry | Name | Status |
+| Registry | Name | Notes |
 |----------|------|--------|
-| npm | `spec-probe` | available |
-| PyPI | `spec-probe` | available |
+| GitHub | [brian-mwirigi/spec-probe](https://github.com/brian-mwirigi/spec-probe) | source of truth |
+| npm | `spec-probe` | frontend app |
+| PyPI | `spec-probe` | install name; import `specprobe_hook` |
 
-Python import module remains `specprobe_hook` (underscores). Wire schema ids stay `specprobe.trace.v1` / `specprobe.event.v1`.
+## License
 
-Schemas: `schemas/speculative-trace-v1.json`, `schemas/specprobe-event-v1.json`.
+MIT — see [LICENSE](LICENSE).
