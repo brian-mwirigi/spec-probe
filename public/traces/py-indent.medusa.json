@@ -1,0 +1,175 @@
+{
+  "schema_version": "specprobe.trace.v1",
+  "trace_id": "tr_pyindent_demo",
+  "created_at": "2026-07-23T16:00:00+00:00",
+  "engine": {
+    "name": "simulator",
+    "version": "0.1.0",
+    "draft_strategy": "medusa",
+    "target_model": "demo-target",
+    "draft_model": "demo-medusa",
+    "temperature": 0.8,
+    "extra": {
+      "note": "Python indentation drift — draft overcommits whitespace."
+    }
+  },
+  "request": {
+    "prompt": "def fib(n):\n    if n < 2:\n        return n\n    return fib(n-1) +",
+    "request_id": "req_demo_indent",
+    "domain_hint": "python"
+  },
+  "blocks": [
+    {
+      "block_index": 0,
+      "draft_len": 10,
+      "rejected_at": 0,
+      "bonus_token": null,
+      "tokens": [
+        {
+          "index": 0,
+          "token": " ",
+          "display": "␠",
+          "draft_prob": 0.71,
+          "target_prob": 0.09,
+          "ratio": 0.127,
+          "accept_prob": 0.127,
+          "roll": 0.44,
+          "outcome": "rejected",
+          "tag": "indent",
+          "reason": "Indentation divergence: q/p=0.127 (roll rejected)."
+        },
+        {
+          "index": 1,
+          "token": " ",
+          "display": "␠",
+          "draft_prob": 0.66,
+          "target_prob": 0.08,
+          "ratio": 0.121,
+          "accept_prob": 0.121,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        },
+        {
+          "index": 2,
+          "token": "fib",
+          "display": "fib",
+          "draft_prob": 0.55,
+          "target_prob": 0.62,
+          "ratio": 1.127,
+          "accept_prob": 1.0,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        },
+        {
+          "index": 3,
+          "token": "(",
+          "display": "(",
+          "draft_prob": 0.5,
+          "target_prob": 0.58,
+          "ratio": 1.16,
+          "accept_prob": 1.0,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        },
+        {
+          "index": 4,
+          "token": "n",
+          "display": "n",
+          "draft_prob": 0.48,
+          "target_prob": 0.57,
+          "ratio": 1.188,
+          "accept_prob": 1.0,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        },
+        {
+          "index": 5,
+          "token": "-",
+          "display": "-",
+          "draft_prob": 0.33,
+          "target_prob": 0.36,
+          "ratio": 1.091,
+          "accept_prob": 1.0,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        },
+        {
+          "index": 6,
+          "token": "2",
+          "display": "2",
+          "draft_prob": 0.4,
+          "target_prob": 0.43,
+          "ratio": 1.075,
+          "accept_prob": 1.0,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        },
+        {
+          "index": 7,
+          "token": ")",
+          "display": ")",
+          "draft_prob": 0.49,
+          "target_prob": 0.6,
+          "ratio": 1.224,
+          "accept_prob": 1.0,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        },
+        {
+          "index": 8,
+          "token": "\n",
+          "display": "↵",
+          "draft_prob": 0.22,
+          "target_prob": 0.51,
+          "ratio": 2.318,
+          "accept_prob": 1.0,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        },
+        {
+          "index": 9,
+          "token": "  ",
+          "display": "␠␠",
+          "draft_prob": 0.58,
+          "target_prob": 0.05,
+          "ratio": 0.086,
+          "accept_prob": 0.086,
+          "roll": null,
+          "outcome": "unverified",
+          "tag": null,
+          "reason": "Unverified — block aborted after earlier rejection."
+        }
+      ],
+      "structural_failures": [
+        {
+          "kind": "indent",
+          "label": "Indentation divergence",
+          "detail": "Whitespace mismatch: draft favored \"␠\" but the target distribution mass is elsewhere — classic Python indent failure mode.",
+          "token_index": 0
+        }
+      ]
+    }
+  ],
+  "metrics": {
+    "wall_time_ms": 18.4,
+    "acceptance_rate": 0.0,
+    "tokens_accepted": 0,
+    "tokens_drafted": 10
+  }
+}

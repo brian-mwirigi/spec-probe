@@ -1,0 +1,28 @@
+[project]
+name = "spec-probe"
+version = "0.2.0"
+description = "Gut vLLM's rejection sampler into spec-probe JSONL traces."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+bridge = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "pydantic>=2"]
+dev = ["pytest>=8.0"]
+vllm = ["vllm>=0.8"]
+
+[project.scripts]
+spec-probe-bridge = "specprobe_hook.bridge:main"
+spec-probe-sweep = "specprobe_hook.sweep:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["specprobe_hook*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
